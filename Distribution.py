@@ -8,6 +8,12 @@ def get_category(images_dir):
     category = dict()
     images_dir = sys.argv[1]
     for dir_name in os.listdir(images_dir):
+        try:
+            if not os.path.isdir(os.path.join(images_dir, dir_name)):
+                raise Exception("Input is not a directory of directories")
+        except Exception as e:
+            print(e.__class__.__name__, e)
+            exit(0)
         nb_files = len(os.listdir(os.path.join(images_dir, dir_name)))
         category[dir_name] = nb_files
     return category
@@ -20,6 +26,13 @@ if __name__ == "__main__":
     except Exception as e:
         print(e.__class__.__name__, e)
         exit(0)
+    try:
+        if not os.path.isdir(sys.argv[1]):
+            raise Exception("Input is not a directory")
+    except Exception as e:
+        print(e.__class__.__name__, e)
+        exit(0)
+
 
     category = get_category(sys.argv[1])
     dir_names = list(category.keys())
@@ -30,6 +43,6 @@ if __name__ == "__main__":
     color = sns.color_palette('tab10', len(dir_names))
     figure.suptitle(fruit + ' class distribution')
 
-    axes[0].pie(images_nb, labels = dir_names, autopct='%.1f%%')
+    axes[0].pie(images_nb, labels=dir_names, autopct='%.1f%%')
     axes[1].bar(category.keys(), category.values(), color=color)
     plt.show()

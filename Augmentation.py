@@ -2,7 +2,8 @@ import os
 import sys
 import cv2
 import numpy as np
-from plantcv import plantcv as pcv 
+from plantcv import plantcv as pcv
+
 
 def get_new_filename(filename: str, suffix: str) -> str:
     split_filename = filename.split(".")
@@ -35,9 +36,7 @@ def augment(path: str):
     # distortion(original_img, filename, aug_dir)
 
 
-
-
-def flip(img: np.ndarray, filename, aug_dir, direction="vertical"):    
+def flip(img: np.ndarray, filename, aug_dir, direction="vertical"):
     flip_filename = get_new_filename(filename, "_Flip")
 
     flipped = pcv.flip(img=img, direction=direction)
@@ -101,7 +100,8 @@ def color_invertion(img: np.ndarray, filename, aug_dir):
 #     hsv_img[:, :, 1] = hsv_img[:, :, 1] * 2
 
 #     distorted = cv2.cvtColor(hsv_img, cv2.COLOR_HSV2BGR)
-#     pcv.print_image(distorted, filename=os.path.join(aug_dir, distortion_filename))
+#     pcv.print_image(distorted, filename=os.path.join(aug_dir,
+#                                                      distortion_filename))
 
 
 if __name__ == "__main__":
