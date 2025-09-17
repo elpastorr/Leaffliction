@@ -1,23 +1,194 @@
 import os
+
+import matplotlib.pyplot as plt
 import sys
-# from plantcv import plantcv as pcv
+import argparse
+import cv2
+import rembg
+from plantcv import plantcv as pcv
 
-def tranfo(image_path: str):
 
+def create_roi(image, masked, filled):
+    """
+    Create an image with the Region of Interest (ROI) rectangle
+    on the image and the mask.
+    """
+    # Define the dimensions of the ROI rectangle
+    height, width, _ = image.shape
+
+    roi = pcv.roi.rectangle(img=masked, x=0, y=0, h=height, w=width)
+
+    kept_mask = pcv.roi.filter(mask=filled, roi=roi, roi_type='partial')
+    
+    roi_image = image.copy()
+    roi_image[kept_mask != 0] = (0, 255, 0) # Green overlay for kept area
+
+    x, y, w, h = cv2.boundingRect(kept_mask)
+
+    cv2.rectangle(roi_image, (x, y), (x + w, y + h), (255, 0, 0), 3)
+
+    return roi_image, kept_mask
+
+
+def create_pseudolandmarks_image(image, kept_mask):
+    """
+    Create an image with pseudolandmarks drawn.
+    """
+    pseudo_landmarks = image.copy()
+    top_x, bottom_x, center = pcv.homology.x_axis_pseudolandmarks(img=pseudo_landmarks, mask=kept_mask, label="default")
+    
+    for i in range(len(top_x)):
+        top_point = (int(top_x[i][0][0]), int(top_x[i][0][1]))
+        bottom_point = (int(bottom_x[i][0][0]), int(bottom_x[i][0][1]))
+        center_point = (int(center[i][0][0]), int(center[i][0][1]))
+        cv2.circle(pseudo_landmarks, top_point, 5, (255, 0, 0), -1)  # Blue for top
+        cv2.circle(pseudo_landmarks, bottom_point, 5, (255, 0, 255), -1)  # Purple for bottom
+        cv2.circle(pseudo_landmarks, center_point, 5, (0, 100, 255), -1)  # Orange for center
+
+    return pseudo_landmarks
+
+
+def render_plot(image_path, images):
+    fig, ax = plt.subplots(ncols=3, nrows=2, figsize=(16, 9))
+
+    fig.suptitle(f"Transformation of {image_path}")
+
+    for (label, img), axe in zip(images.items(), ax.flat):
+        axe.imshow(img)
+        axe.set_title(label)
+        axe.set(xticks=[], yticks=[])
+        axe.label_outer()
+    
+    plt.show()
+    plt.close()
+
+
+def plot_histogram(image, kept_mask):
+    """
+    Plot the histogram of the color image
+    """
+
+    dict_labels = {
+        "blue": 1,
+        "yellow": 1,
+        "green": 1,
+        "magenta": 1,
+        "hue": 1,
+        "lightness": 1,
+        "red": 1,
+        "saturation": 1,
+        "value": 1
+    }
+
+    plt.subplots(figsize=(16, 9))
+
+    # A FAIRE Plot histograms for each color channel
+
+    plt.legend()
+
+    plt.title("Color Histogram")
+    plt.xlabel("Pixel intensity")
+    plt.ylabel("Proportion of pixels (%)")
+
+    plt.show()
+    plt.close()
+
+
+def process_directory(src, dst):
+    """
+    Transform all the images in the src directory and save them in the dst directory
+    """
+
+    if not os.path.isdir(dst):
+        os.makedirs(dst)
+
+    GREEN = "\033[92m"
+    RESET = "\033[0m"
+    print(f"{GREEN}Transformation phase, creating {dst} from {src}:\n{RESET}")
+
+    for file in os.listdir(src):
+        if file.lower().endswith(('.jpg')):
+            process_file(os.path.join(src, file), dst)
+
+
+
+
+
+def process_file(image_path, dst=None):
+    # Read the image from the given path
+    image, _, _ = pcv.readimage(image_path, mode='rgb')
+
+    image_without_bg = rembg.remove(image)
+
+    gray_scale = pcv.rgb2gray_lab(rgb_img=image_without_bg, channel='l')
+
+    thresh = pcv.threshold.binary(gray_img=gray_scale, threshold=35, object_type='light')
+
+    filled = pcv.fill(bin_img=thresh, size=200)
+
+    # Apply Gaussian blur to the image
+    gaussian_blur = pcv.gaussian_blur(img=filled, ksize=(3, 3))
+
+    # Remove background of image using the mask
+    masked = pcv.apply_mask(img=image, mask=gaussian_blur, mask_color='black')
+
+    # Define Region of Interest (ROI) on the image
+    roi_image, kept_mask = create_roi(image, masked, filled)
+
+    # Analyze the image to extract shape and color information
+    analyzed_image = pcv.analyze.size(img=image, labeled_mask=kept_mask)
+
+    # Create an image with pseudolandmarks drawn
+    pseudo_landmarks = create_pseudolandmarks_image(image, kept_mask)
+
+
+    images = {
+        "Original": cv2.cvtColor(filled, cv2.COLOR_BGR2RGB),
+        "Gaussian Blur": cv2.cvtColor(gaussian_blur, cv2.COLOR_BGR2RGB),
+        "Mask": cv2.cvtColor(masked, cv2.COLOR_BGR2RGB),
+        "ROI": cv2.cvtColor(roi_image, cv2.COLOR_BGR2RGB),
+        "Analyzed": cv2.cvtColor(analyzed_image, cv2.COLOR_BGR2RGB),
+        "Pseudolandmarks": cv2.cvtColor(pseudo_landmarks, cv2.COLOR_BGR2RGB),
+    }
+
+    if dst == None:
+        render_plot(image_path, images)
+        plot_histogram(image, kept_mask)
+
+    else:
+        for label, img in images.items():
+            cv2.imwrite(os.path.join(dst, (label + '_' + image_path[image_path.rfind('/')+1:])), cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+
+
+def main():
+    """
+    This program is designed to perform transformations on image(s). It accepts an image path or source directory containing images 
+    and a destination directory where the transformed images will be saved.
+    Usage:
+        Transformation.py (-src) path/to/image(s) (-dst path/to/destination)
+    Arguments:
+        -src, --source       Path to the source directory containing images to be transformed.
+        -dst, --destination  Path to the destination directory where transformed images will be saved.
+    """
+
+    parser = argparse.ArgumentParser(description="Apply Transformation to an image or a directory of images.")
+
+    parser.add_argument("-src", "--source", help="Source directory of images")
+
+    parser.add_argument("-dst", "--destination",help="Destination directory for transformed images")
+
+    parser.add_argument("image", nargs='?', help="Path to image file")
+
+    args = parser.parse_args()
+
+    if args.source and args.destination:
+        process_directory(args.source, args.destination)
+    elif args.image and not args.source and not args.destination:
+        process_file(args.image)
+
+    else:
+        parser.print_help()
 
 
 if __name__ == "__main__":
-    try:
-        if len(sys.argv) != 2:
-            raise Exception("Input should be: Transformation.py path/to/image")
-    except Exception as e:
-        print(e.__class__.__name__, e)
-        exit(0)
-    try:
-        if not os.path.exists(sys.argv[1]):
-            raise FileNotFoundError(sys.argv[1])
-    except Exception as e:
-        print(e.__class__.__name__, e)
-        exit(0)
-
-    tranfo(sys.argv[1])
+    main()

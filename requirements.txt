@@ -1,0 +1,7 @@
+opencv-python
+matplotlib
+plantcv
+seaborn
+
+rembg
+onnxruntime

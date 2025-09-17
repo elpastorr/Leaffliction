@@ -1,5 +1,5 @@
 #!/bin/bash
-if [ ! -d Apple ]; then
+if [ ! -d images ]; then
     curl -O https://cdn.intra.42.fr/document/document/17547/leaves.zip
     unzip leaves.zip
     rm leaves.zip
