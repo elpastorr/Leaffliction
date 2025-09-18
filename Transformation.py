@@ -63,26 +63,43 @@ def render_plot(image_path, images):
     plt.close()
 
 
+def plot_stat(key, val):
+    y = pcv.outputs.observations['default_1'][key]['value']
+    x = [i * val for i in pcv.outputs.observations['default_1'][key]['label']]
+
+    if key == "hue_frequencies":
+        x = x[:int(255/2)]
+        y = y[:int(255/2)]
+    if (key == "blue-yellow_frequencies" or key == "green-magenta_frequencies"):
+        x = [x + 128 for x in x]
+    plt.plot(x, y, label=key)
+
+
 def plot_histogram(image, kept_mask):
     """
     Plot the histogram of the color image
     """
 
     dict_labels = {
-        "blue": 1,
-        "yellow": 1,
-        "green": 1,
-        "magenta": 1,
-        "hue": 1,
-        "lightness": 1,
-        "red": 1,
-        "saturation": 1,
-        "value": 1
+        "blue_frequencies": 1,
+        "green_frequencies": 1,
+        "green-magenta_frequencies": 1,
+        "lightness_frequencies": 2.55,
+        "red_frequencies": 1,
+        "blue-yellow_frequencies": 1,
+        "hue_frequencies": 1,
+        "saturation_frequencies": 2.55,
+        "value_frequencies": 2.55
     }
+
+    labels, _ = pcv.create_labels(mask=kept_mask)
+    pcv.analyze.color(rgb_img=image, colorspaces="all", labeled_mask=labels,label="default")
+
 
     plt.subplots(figsize=(16, 9))
 
-    # A FAIRE Plot histograms for each color channel
+    for key, val in dict_labels.items():
+        plot_stat(key, val)
 
     plt.legend()
 
@@ -99,6 +116,9 @@ def process_directory(src, dst):
     Transform all the images in the src directory and save them in the dst directory
     """
 
+    if not os.path.isdir(src):
+        print(f"Error: Source directory '{src}' does not exist.")
+        sys.exit(1)
     if not os.path.isdir(dst):
         os.makedirs(dst)
 
@@ -115,6 +135,10 @@ def process_directory(src, dst):
 
 
 def process_file(image_path, dst=None):
+    if not os.path.isfile(image_path):
+        print(f"Error: Image file '{image_path}' does not exist.")
+        sys.exit(1)
+
     # Read the image from the given path
     image, _, _ = pcv.readimage(image_path, mode='rgb')
 
