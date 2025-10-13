@@ -5,3 +5,9 @@ seaborn
 
 rembg
 onnxruntime
+
+# For IA model training
+tensorflow[and-cuda]
+
+# Dependency for wsl and non interactive os
+PyQt6
