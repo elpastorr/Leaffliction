@@ -155,7 +155,7 @@ def process_file(image_path, dst=None):
     gaussian_blur = pcv.gaussian_blur(img=filled, ksize=(3, 3))
 
     # Remove background of image using the mask
-    masked = pcv.apply_mask(img=image, mask=gaussian_blur, mask_color='black')
+    masked = pcv.apply_mask(img=image, mask=gray_scale, mask_color='white')
 
     # Define Region of Interest (ROI) on the image
     roi_image, kept_mask = create_roi(image, masked, filled)
@@ -168,7 +168,7 @@ def process_file(image_path, dst=None):
 
 
     images = {
-        "Original": cv2.cvtColor(filled, cv2.COLOR_BGR2RGB),
+        "Original": cv2.cvtColor(image, cv2.COLOR_BGR2RGB),
         "Gaussian Blur": cv2.cvtColor(gaussian_blur, cv2.COLOR_BGR2RGB),
         "Mask": cv2.cvtColor(masked, cv2.COLOR_BGR2RGB),
         "ROI": cv2.cvtColor(roi_image, cv2.COLOR_BGR2RGB),
