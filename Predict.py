@@ -8,12 +8,18 @@ import matplotlib.pyplot as plt
 import rembg
 import cv2
 
+class colors:
+    GREEN = '\033[92m'
+    ENDC = '\033[0m'
+
 def render_plot(image_path: str, image, prediction: str):
     text = "===    DL classification    ===\n\nClass predicted : " \
-        + prediction
+        + colors.GREEN + prediction + colors.ENDC
 
     fig, ax = plt.subplots(ncols=2, figsize=(10, 6), facecolor='black')
+
     fig.suptitle(f"Transformation of {image_path}")
+
     for i, (title, img) in enumerate(image.items()):
         ax[i].imshow(img)
         ax[i].set_title(title)
@@ -35,7 +41,6 @@ def render(img_path: str, prediction: str):
     render_plot(img_path, {"Original": cv2.cvtColor(image, cv2.COLOR_BGR2RGB), "Masked": cv2.cvtColor(masked, cv2.COLOR_BGR2RGB)}, prediction)
 
 
-
 def load_model(path: str):
     model: tf.keras.Model = tf.keras.models.load_model(path)
     return model
@@ -45,13 +50,13 @@ def main(model_path: str, image_path: str, classes: list[str]):
     if (not os.path.isfile(model_path)):
         print("Invalid model file.")
         return
-    
+
     if (not os.path.exists(image_path)):
         print("Invalid image path.")
         return
-    
+
     model: tf.keras.Model = load_model(model_path)
-    
+
     image = None
     prediction = []
     if (os.path.isfile(image_path)):
@@ -63,7 +68,6 @@ def main(model_path: str, image_path: str, classes: list[str]):
 
     if (os.path.isdir(image_path)):
         image = []
-        # print(os.listdir(image_path))
         for img_file in os.listdir(image_path):
             img = tf.keras.preprocessing.image.load_img(os.path.join(image_path, img_file), target_size=(256, 256))
             img = tf.keras.preprocessing.image.img_to_array(img)
@@ -71,6 +75,7 @@ def main(model_path: str, image_path: str, classes: list[str]):
             image.append(img)
         image = tf.concat(image, axis=0)
         prediction.append(model.predict(image))
+
     print(f"\t{'\t'.join(classes)}")
     for i, predictions in enumerate(prediction):
         for j, predict in enumerate(predictions):
