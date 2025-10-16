@@ -13,8 +13,8 @@ class colors:
     ENDC = '\033[0m'
 
 def render_plot(image_path: str, image, prediction: str):
-    text = "===    DL classification    ===\n\nClass predicted : " \
-        + colors.GREEN + prediction + colors.ENDC
+
+    text = "===    DL classification    ===\n\nClass predicted : "
 
     fig, ax = plt.subplots(ncols=2, figsize=(10, 6), facecolor='black')
 
@@ -26,8 +26,10 @@ def render_plot(image_path: str, image, prediction: str):
         ax[i].axis('off')
     for i in range(2):
         ax[i].set_position([0.05 + i * 0.5, 0.2, 0.4, 0.7])  # Adjust position and size of subplots
-    plt.figtext(0.5, 0.05, text, ha='center',
+    plt.figtext(0.5, 0.1, text, ha='center',
                 fontsize=16, color='white', weight='bold')
+    plt.figtext(0.5, 0.05, prediction, ha='center',
+                fontsize=16, color='green', weight='bold')
     plt.show()
     plt.close()
 
