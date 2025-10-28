@@ -22,39 +22,32 @@ def split_data(source_dir):
     if not os.path.isdir(source_directory):
         raise Exception("Input is not a directory")
 
-    files = []
+    image_files = []
     for root, dirs, files in os.walk(source_dir):
         for file in files:
             if file.lower().endswith('.jpg'):
-                files.append(os.path.join(root, file))
-    # files = [os.path.basename(f) for f in src_dirs]
-    # print(src_dirs)
-    # source_dir = os.path.dirname(src_dirs[0]) if src_dirs else source_dir
-
-    # Get list of image files
-    # files = [f for f in os.listdir(source_dir) if f.lower().endswith('.jpg')]
+                image_files.append(os.path.join(root, file))
 
     # Shuffle files randomly
-    random.shuffle(files)
+    random.shuffle(image_files)
     
     # Calculate split index
-    split_index = int(len(files) * 0.8)
+    split_index = int(len(image_files) * 0.8)
     
     # Split files into training and validation sets
-    train_files = files[:split_index]
-    val_files = files[split_index:]
-    print(files)
-    return
+    train_files = image_files[:split_index]
+    val_files = image_files[split_index:]
+
     # Copy files to respective directories
     for file in train_files:
-        src_path = os.path.join(source_dir, file)
-        dst_path = os.path.join(train_dir, file)
-        shutil.copy2(src_path, dst_path)
-    
+        dst_path = os.path.join(train_dir, os.path.basename(file))
+        shutil.copy2(file, dst_path)
+
     for file in val_files:
-        src_path = os.path.join(source_dir, file)
-        dst_path = os.path.join(val_dir, file)
-        shutil.copy2(src_path, dst_path)
+        dst_path = os.path.join(val_dir, os.path.basename(file))
+        print(file, dst_path)
+        shutil.copy2(file, dst_path)
+
 
 if __name__ == "__main__":
     source_directory = sys.argv[1]
