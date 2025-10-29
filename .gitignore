@@ -4,5 +4,6 @@ images/
 __pycache__/
 *.keras
 *.h5
+splited_images
 test
 tests

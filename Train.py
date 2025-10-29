@@ -144,7 +144,7 @@ if __name__ == "__main__":
 	# parser.parse_args()
 
 	model_file = "model.keras"
-	dataset = "images"
+	dataset = "images/Apple"
 
 	setup_logging()
 	train_ds, val_ds = init_datasets(dataset)

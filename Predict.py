@@ -48,14 +48,12 @@ def load_model(path: str):
     return model
 
 
-def main(model_path: str, image_path: str, classes: list[str]):
+def main(model_path: str, image_path: str, classes: list[str], dorender: bool):
     if (not os.path.isfile(model_path)):
-        print("Invalid model file.")
-        return
+        raise Exception("Invalid model file.")
 
     if (not os.path.exists(image_path)):
-        print("Invalid image path.")
-        return
+        raise Exception("Invalid image path.")
 
     model: tf.keras.Model = load_model(model_path)
 
@@ -66,11 +64,14 @@ def main(model_path: str, image_path: str, classes: list[str]):
         image = tf.keras.preprocessing.image.img_to_array(image)
         image = tf.expand_dims(image, axis=0)
         prediction.append(model.predict(image))
-        render(image_path, classes[prediction[0].argmax()])
+        if dorender == True:
+            render(image_path, classes[prediction[0].argmax()])
 
     if (os.path.isdir(image_path)):
         image = []
         for img_file in os.listdir(image_path):
+            if os.path.isdir(os.path.join(image_path, img_file)):
+                raise Exception("Image path :" + os.path.join(image_path, img_file) + " is a directory.")
             img = tf.keras.preprocessing.image.load_img(os.path.join(image_path, img_file), target_size=(256, 256))
             img = tf.keras.preprocessing.image.img_to_array(img)
             img = tf.expand_dims(img, axis=0)
@@ -92,5 +93,11 @@ if __name__ == "__main__":
     parser.add_argument("image", help="Path of image")
     parser.add_argument("model", help="Path of model save")
     parser.add_argument("-c", "--classes", default=['Apple_Black_rot', 'Apple_healthy', 'Apple_rust', 'Apple_scab', 'Grape_Black_rot', 'Grape_Esca', 'Grape_healthy', 'Grape_spot'], help="Classes Types")
+    parser.add_argument("-r", "--dorender", default=True, help="Render image")
+
     args = parser.parse_args()
-    main(args.model, args.image, args.classes)
+    try:
+        main(args.model, args.image, args.classes, args.dorender)
+    except Exception as e:
+        print(e.__class__.__name__, e)
+        exit(1)
