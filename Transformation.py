@@ -20,9 +20,9 @@ def create_roi(image, masked, filled):
     roi = pcv.roi.rectangle(img=masked, x=0, y=0, h=height, w=width)
 
     kept_mask = pcv.roi.filter(mask=filled, roi=roi, roi_type='partial')
-    
+
     roi_image = image.copy()
-    roi_image[kept_mask != 0] = (0, 255, 0) # Green overlay for kept area
+    roi_image[kept_mask != 0] = (0, 255, 0)  # Green overlay for kept area
 
     x, y, w, h = cv2.boundingRect(kept_mask)
 
@@ -36,15 +36,16 @@ def create_pseudolandmarks_image(image, kept_mask):
     Create an image with pseudolandmarks drawn.
     """
     pseudo_landmarks = image.copy()
-    top_x, bottom_x, center = pcv.homology.x_axis_pseudolandmarks(img=pseudo_landmarks, mask=kept_mask, label="default")
-    
+    top_x, bottom_x, center = pcv.homology.x_axis_pseudolandmarks(
+        img=pseudo_landmarks, mask=kept_mask, label="default")
+
     for i in range(len(top_x)):
         top_point = (int(top_x[i][0][0]), int(top_x[i][0][1]))
         bottom_point = (int(bottom_x[i][0][0]), int(bottom_x[i][0][1]))
         center_point = (int(center[i][0][0]), int(center[i][0][1]))
-        cv2.circle(pseudo_landmarks, top_point, 5, (255, 0, 0), -1)  # Blue for top
-        cv2.circle(pseudo_landmarks, bottom_point, 5, (255, 0, 255), -1)  # Purple for bottom
-        cv2.circle(pseudo_landmarks, center_point, 5, (0, 100, 255), -1)  # Orange for center
+        cv2.circle(pseudo_landmarks, top_point, 5, (255, 0, 0), -1)
+        cv2.circle(pseudo_landmarks, bottom_point, 5, (255, 0, 255), -1)
+        cv2.circle(pseudo_landmarks, center_point, 5, (0, 100, 255), -1)
 
     return pseudo_landmarks
 
@@ -59,7 +60,7 @@ def render_plot(image_path, images):
         axe.set_title(label)
         axe.set(xticks=[], yticks=[])
         axe.label_outer()
-    
+
     plt.show()
     plt.close()
 
@@ -71,7 +72,8 @@ def plot_stat(key, val):
     if key == "hue_frequencies":
         x = x[:int(255/2)]
         y = y[:int(255/2)]
-    if (key == "blue-yellow_frequencies" or key == "green-magenta_frequencies"):
+    if (key == "blue-yellow_frequencies" or
+       key == "green-magenta_frequencies"):
         x = [x + 128 for x in x]
     plt.plot(x, y, label=key)
 
@@ -93,9 +95,9 @@ def plot_histogram(image, kept_mask):
         "value_frequencies": 2.55
     }
 
-    labels, _ = pcv.create_labels(mask=kept_mask)
-    pcv.analyze.color(rgb_img=image, colorspaces="all", labeled_mask=labels,label="default")
-
+    label, _ = pcv.create_labels(mask=kept_mask)
+    pcv.analyze.color(rgb_img=image,
+                      colorspaces="all", labeled_mask=label, label="default")
 
     plt.subplots(figsize=(16, 9))
 
@@ -114,7 +116,7 @@ def plot_histogram(image, kept_mask):
 
 def process_directory(src, dst):
     """
-    Transform all the images in the src directory and save them in the dst directory
+    Transform all the images in src directory and save them in dst directory
     """
 
     if not os.path.isdir(src):
@@ -132,9 +134,6 @@ def process_directory(src, dst):
             process_file(os.path.join(src, file), dst)
 
 
-
-
-
 def process_file(image_path, dst=None):
     if not os.path.isfile(image_path):
         print(f"Error: Image file '{image_path}' does not exist.")
@@ -147,7 +146,8 @@ def process_file(image_path, dst=None):
 
     gray_scale = pcv.rgb2gray_lab(rgb_img=image_without_bg, channel='l')
 
-    thresh = pcv.threshold.binary(gray_img=gray_scale, threshold=35, object_type='light')
+    thresh = pcv.threshold.binary(gray_img=gray_scale,
+                                  threshold=35, object_type='light')
 
     filled = pcv.fill(bin_img=thresh, size=200)
 
@@ -166,7 +166,6 @@ def process_file(image_path, dst=None):
     # Create an image with pseudolandmarks drawn
     pseudo_landmarks = create_pseudolandmarks_image(image, kept_mask)
 
-
     images = {
         "Original": cv2.cvtColor(image, cv2.COLOR_BGR2RGB),
         "Gaussian Blur": cv2.cvtColor(gaussian_blur, cv2.COLOR_BGR2RGB),
@@ -176,31 +175,37 @@ def process_file(image_path, dst=None):
         "Pseudolandmarks": cv2.cvtColor(pseudo_landmarks, cv2.COLOR_BGR2RGB),
     }
 
-    if dst == None:
+    if dst is None:
         render_plot(image_path, images)
         plot_histogram(image, kept_mask)
 
     else:
         for label, img in images.items():
-            cv2.imwrite(os.path.join(dst, (label + '_' + image_path[image_path.rfind('/')+1:])), cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+            cv2.imwrite(os.path.join(
+                        dst, (label + '_' +
+                              image_path[image_path.rfind('/')+1:])),
+                        cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
 
 
 def main():
     """
-    This program is designed to perform transformations on image(s). It accepts an image path or source directory containing images 
+    This program is designed to perform transformations on image(s).
+    It accepts an image path or source directory containing images
     and a destination directory where the transformed images will be saved.
     Usage:
         Transformation.py (-src) path/to/image(s) (-dst path/to/destination)
     Arguments:
-        -src, --source       Path to the source directory containing images to be transformed.
-        -dst, --destination  Path to the destination directory where transformed images will be saved.
+        -src,  Path to source directory containing images to be transformed.
+        -dst,  Path to directory where transformed images will be saved.
     """
 
-    parser = argparse.ArgumentParser(description="Apply Transformation to an image or a directory of images.")
+    parser = argparse.ArgumentParser(description="Apply Transformation to" +
+                                     "an image or a directory of images.")
 
     parser.add_argument("-src", "--source", help="Source directory of images")
 
-    parser.add_argument("-dst", "--destination",help="Destination directory for transformed images")
+    parser.add_argument("-dst", "--destination",
+                        help="Destination directory for transformed images")
 
     parser.add_argument("image", nargs='?', help="Path to image file")
 

@@ -34,7 +34,6 @@ if __name__ == "__main__":
         print(e.__class__.__name__, e)
         exit(0)
 
-
     category = get_category(sys.argv[1])
     dir_names = list(category.keys())
     images_nb = list(category.values())

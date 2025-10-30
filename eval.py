@@ -1,7 +1,6 @@
 import os
 import argparse
 import subprocess
-import json
 from typing import List, Dict
 import sys
 
@@ -23,22 +22,22 @@ def get_images_with_classes(test_dir: str) -> List[tuple]:
     return image_paths
 
 
-def run_prediction(image_path: str, model_path: str, classes: List[str]) -> str:
+def run_pred(image_path: str, model_path: str, classes: List[str]) -> str:
     """Run predict.py on a single image and return predicted class"""
     try:
         # Capture the output of predict.py
         cmd = ["python3", "Predict.py", image_path, model_path, "-r False"]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        
+        res = subprocess.run(cmd, capture_output=True, text=True, check=True)
+
         # Parse output to find predicted class
-        lines = result.stdout.split('\n')
+        lines = res.stdout.split('\n')
         for line in lines:
             if line.startswith("Predicted class: "):
                 return line.replace("Predicted class: ", "").strip()
-        
+
         raise ValueError("Could not find prediction in output")
     except subprocess.CalledProcessError as e:
-        print(f"Error running prediction on {image_path}: {e}", file=sys.stderr)
+        print(f"Error running prediction on {image_path}:", e, file=sys.stderr)
         print(f"predict.py stderr: {e.stderr}", file=sys.stderr)
         return None
     except Exception as e:
@@ -49,41 +48,41 @@ def run_prediction(image_path: str, model_path: str, classes: List[str]) -> str:
 def evaluate_model(test_dir: str, model_path: str, classes: List[str]) -> Dict:
     """Evaluate model accuracy on test directory"""
     print(f"\nEvaluating model on {test_dir}...")
-    
+
     # Get all test images and their true classes
     test_images = get_images_with_classes(test_dir)
     if not test_images:
         print(f"No images found in {test_dir}")
         return None
-    
+
     total = len(test_images)
     correct = 0
     class_correct: Dict[str, int] = {cls: 0 for cls in classes}
     class_total: Dict[str, int] = {cls: 0 for cls in classes}
-    
+
     # Process each image
     for i, (image_path, true_class) in enumerate(test_images, 1):
         print(f"\rProcessing image {i}/{total}...", end="", flush=True)
-        
-        predicted_class = run_prediction(image_path, model_path, classes)
+
+        predicted_class = run_pred(image_path, model_path, classes)
         if predicted_class is None:
             continue
-            
+
         class_total[true_class] = class_total.get(true_class, 0) + 1
-        
+
         if predicted_class == true_class:
             correct += 1
             class_correct[true_class] = class_correct.get(true_class, 0) + 1
-    
-    print("\n")  # New line after progress
-    
-    # Calculate metrics
+
+    print("\n")
+
     accuracy = (correct / total) * 100 if total > 0 else 0
     per_class_accuracy = {
-        cls: (class_correct[cls] / class_total[cls] * 100) if class_total[cls] > 0 else 0
+        cls: (class_correct[cls] / class_total[cls] * 100)
+        if class_total[cls] > 0 else 0
         for cls in classes
     }
-    
+
     return {
         "total_images": total,
         "correct_predictions": correct,
@@ -98,22 +97,24 @@ def print_results(results: Dict) -> None:
     print(f"Total images evaluated: {results['total_images']}")
     print(f"Correct predictions: {results['correct_predictions']}")
     print(f"Overall accuracy: {results['accuracy']:.2f}%")
-    
+
     print("\nPer-class accuracy:")
     for cls, acc in results['per_class_accuracy'].items():
         print(f"  {cls}: {acc:.2f}%")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Evaluate model accuracy on a test set")
-    parser.add_argument("test_dir", help="Directory containing test images in class subdirectories")
+    classes = ['Apple_Black_rot', 'Apple_healthy', 'Apple_rust', 'Apple_scab',
+               'Grape_Black_rot', 'Grape_Esca', 'Grape_healthy', 'Grape_spot']
+    parser = argparse.ArgumentParser(
+        description="Evaluate model accuracy on a test set")
+    parser.add_argument("test_dir", help="Directory containing" +
+                        "test images in class subdirectories")
     parser.add_argument("model", help="Path to the trained model file")
-    parser.add_argument("-c", "--classes", nargs="+", 
-                      default=['Apple_Black_rot', 'Apple_healthy', 'Apple_rust', 'Apple_scab',
-                              'Grape_Black_rot', 'Grape_Esca', 'Grape_healthy', 'Grape_spot'],
-                      help="List of class names (should match training classes)")
+    parser.add_argument("-c", "--classes", nargs="+", default=classes,
+                        help="List of class names")
     args = parser.parse_args()
-    
+
     # Validate inputs
     if not os.path.isdir(args.test_dir):
         print(f"Error: Test directory '{args.test_dir}' does not exist")
@@ -121,7 +122,7 @@ def main():
     if not os.path.isfile(args.model):
         print(f"Error: Model file '{args.model}' does not exist")
         sys.exit(1)
-    
+
     # Run evaluation
     results = evaluate_model(args.test_dir, args.model, args.classes)
     if results:
