@@ -134,7 +134,7 @@ def process_directory(src, dst):
             process_file(os.path.join(src, file), dst)
 
 
-def process_file(image_path, dst=None):
+def process_file(image_path, dst):
     if not os.path.isfile(image_path):
         print(f"Error: Image file '{image_path}' does not exist.")
         sys.exit(1)
@@ -200,7 +200,7 @@ def main():
     """
 
     parser = argparse.ArgumentParser(description="Apply Transformation to" +
-                                     "an image or a directory of images.")
+                                     " an image or a directory of images.")
 
     parser.add_argument("-src", "--source", help="Source directory of images")
 
@@ -214,8 +214,7 @@ def main():
     if args.source and args.destination:
         process_directory(args.source, args.destination)
     elif args.image and not args.source and not args.destination:
-        process_file(args.image)
-
+        process_file(args.image, None)
     else:
         parser.print_help()
 

@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import logging
 import argparse
+import os
+from Augmentation import augment_dir
+from Transformation import process_directory
 
 """
 Setup logging system
@@ -11,7 +14,7 @@ Setup logging system
 
 def setup_logging():
     logging.getLogger("tensorflow").setLevel(logging.ERROR)
-    tf.get_logger().setLevel('CRITICAL')
+    tf.get_logger().setLevel("CRITICAL")
     fmt = "%(asctime)s - %(levelname)s - %(message)s"
     global my_logger
     my_logger = logging.getLogger()
@@ -19,23 +22,6 @@ def setup_logging():
     if not my_logger.hasHandlers():
         my_logger.addHandler(logging.StreamHandler())
     my_logger.handlers[0].setFormatter(logging.Formatter(fmt))
-
-
-"""
-Initialize parsing
-"""
-
-
-def init_parser():
-    parser = argparse.ArgumentParser(
-                    prog='Training',
-                    description='Train image classification model on dataset',
-                    epilog='By Tamigore and Elpastor')
-    parser.add_argument('-s', '--save', default="model.h5",
-                        help='Path to save the model')
-    parser.add_argument('-d', '--dataset', default="images",
-                        help='Path to the dataset')
-    return parser
 
 
 """
@@ -110,20 +96,20 @@ def train_model(train_ds: tf.data.Dataset, val_ds: tf.data.Dataset):
     my_logger.info(f"num_classes = {num_classes}")
     model: tf.keras.models.Sequential = tf.keras.models.Sequential([
         tf.keras.Input(shape=(256, 256, 3)),
-        tf.keras.layers.Conv2D(16, 3, padding='same', activation='relu'),
+        tf.keras.layers.Conv2D(16, 3, padding="same", activation="relu"),
         tf.keras.layers.MaxPooling2D(),
-        tf.keras.layers.Conv2D(32, 3, padding='same', activation='relu'),
+        tf.keras.layers.Conv2D(32, 3, padding="same", activation="relu"),
         tf.keras.layers.MaxPooling2D(),
-        tf.keras.layers.Conv2D(64, 3, padding='same', activation='relu'),
+        tf.keras.layers.Conv2D(64, 3, padding="same", activation="relu"),
         tf.keras.layers.MaxPooling2D(),
         tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dense(128, activation="relu"),
         tf.keras.layers.Dense(num_classes)
     ])
-    model.compile(optimizer='adam',
+    model.compile(optimizer="adam",
                   loss=tf.keras.losses.SparseCategoricalCrossentropy(
                       from_logits=True),
-                  metrics=['accuracy'])
+                  metrics=["accuracy"])
     model.summary()
     # epochs = 10
     # history: tf.keras.callbacks.History = model.fit(
@@ -137,33 +123,52 @@ def train_model(train_ds: tf.data.Dataset, val_ds: tf.data.Dataset):
 
 def visualize_result(history: tf.keras.callbacks.History, epochs):
     print("--- Show result ---")
-    acc = history.history['accuracy']
-    val_acc = history.history['val_accuracy']
-    loss = history.history['loss']
-    val_loss = history.history['val_loss']
+    acc = history.history["accuracy"]
+    val_acc = history.history["val_accuracy"]
+    loss = history.history["loss"]
+    val_loss = history.history["val_loss"]
     epochs_range = range(epochs)
     plt.figure(figsize=(8, 8))
     plt.subplot(1, 2, 1)
-    plt.plot(epochs_range, acc, label='Training Accuracy')
-    plt.plot(epochs_range, val_acc, label='Validation Accuracy')
-    plt.legend(loc='lower right')
-    plt.title('Training and Validation Accuracy')
+    plt.plot(epochs_range, acc, label="Training Accuracy")
+    plt.plot(epochs_range, val_acc, label="Validation Accuracy")
+    plt.legend(loc="lower right")
+    plt.title("Training and Validation Accuracy")
     plt.show()
     plt.subplot(1, 2, 2)
-    plt.plot(epochs_range, loss, label='Training Loss')
-    plt.plot(epochs_range, val_loss, label='Validation Loss')
-    plt.legend(loc='upper right')
-    plt.title('Training and Validation Loss')
+    plt.plot(epochs_range, loss, label="Training Loss")
+    plt.plot(epochs_range, val_loss, label="Validation Loss")
+    plt.legend(loc="upper right")
+    plt.title("Training and Validation Loss")
     plt.show()
 
 
 if __name__ == "__main__":
-    parser = init_parser()
+    parser = argparse.ArgumentParser(
+                    prog="Training",
+                    description="Train image classification model on dataset",
+                    epilog="By Tamigore and Elpastor")
+
+    parser.add_argument("dataset", help="Path to the dataset")
+
+    parser.add_argument("-s", "--save", default="model.h5",
+                        help="Path to save the model")
+
+    parser.add_argument("-a", "--augment", default=False,
+                        help="Apply data augmentation")
+
+    parser.add_argument("-t", "--transformation", default=False,
+                       help="Apply data transformation")
+
     args = parser.parse_args()
 
-    # model_file = "model.keras"
-    # dataset = "images/Apple"
-
+    if not os.path.exists(args.dataset):
+        print("Dataset path is invalid.")
+        exit(1)
+    # if args.augment is True:
+    #     augment_dir(args.dataset, args.dataset)
+    # if args.transformation is True:
+    #     process_directory(args.dataset, args.dataset)
     setup_logging()
     train_ds, val_ds = init_datasets(args.dataset)
     # get_info(train_ds)
