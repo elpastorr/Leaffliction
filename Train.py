@@ -6,6 +6,7 @@ import argparse
 import os
 from Augmentation import augment_dir
 from Transformation import process_directory
+from utils import split_data
 
 """
 Setup logging system
@@ -111,13 +112,13 @@ def train_model(train_ds: tf.data.Dataset, val_ds: tf.data.Dataset):
                       from_logits=True),
                   metrics=["accuracy"])
     model.summary()
-    # epochs = 10
-    # history: tf.keras.callbacks.History = model.fit(
-    #     train_ds,
-    #     validation_data=val_ds,
-    #     epochs=epochs
-    # )
-    # visualize_result(history, epochs)
+    epochs = 10
+    history: tf.keras.callbacks.History = model.fit(
+        train_ds,
+        validation_data=val_ds,
+        epochs=epochs
+    )
+    visualize_result(history, epochs)
     return model
 
 
@@ -151,26 +152,41 @@ if __name__ == "__main__":
 
     parser.add_argument("dataset", help="Path to the dataset")
 
-    parser.add_argument("-s", "--save", default="model.h5",
+    parser.add_argument("-s", "--save", default="model.keras",
                         help="Path to save the model")
 
-    parser.add_argument("-a", "--augment", default=False,
+    parser.add_argument("-sp", "--split", action="store_true",
+                        help="Split dataset into training & validation sets")
+
+    parser.add_argument("-a", "--augment", action="store_true",
                         help="Apply data augmentation")
 
-    parser.add_argument("-t", "--transformation", default=False,
-                       help="Apply data transformation")
+    parser.add_argument("-t", "--transformation", action="store_true",
+                        help="Apply data transformation")
 
     args = parser.parse_args()
 
     if not os.path.exists(args.dataset):
         print("Dataset path is invalid.")
         exit(1)
-    # if args.augment is True:
-    #     augment_dir(args.dataset, args.dataset)
-    # if args.transformation is True:
-    #     process_directory(args.dataset, args.dataset)
+
+    if args.split:
+        print("Splitting data...")
+        split_data(args.dataset)
+        train_dir = "splited_images/training"
+    else:
+        train_dir = args.dataset
+
+    if args.augment:
+        print("Augmenting data...")
+        augment_dir(train_dir, train_dir)
+
+    if args.transformation:
+        print("Transforming data...")
+        process_directory(train_dir, train_dir)
+
     setup_logging()
-    train_ds, val_ds = init_datasets(args.dataset)
+    train_ds, val_ds = init_datasets(train_dir)
     # get_info(train_ds)
     # get_info(val_ds)
     model: tf.keras.models.Sequential = train_model(train_ds, val_ds)

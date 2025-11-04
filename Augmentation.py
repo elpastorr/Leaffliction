@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import os
-import sys
 import cv2
 import numpy as np
 from plantcv import plantcv as pcv

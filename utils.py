@@ -20,7 +20,7 @@ def split_data(source_dir):
     os.makedirs(train_dir, exist_ok=True)
     os.makedirs(val_dir, exist_ok=True)
 
-    if not os.path.isdir(source_directory):
+    if not os.path.isdir(source_dir):
         raise Exception("Input is not a directory")
 
     image_files = []
@@ -40,6 +40,14 @@ def split_data(source_dir):
     # Copy files to respective directories
     for file in train_files:
         dst_path = os.path.join(train_dir, os.path.basename(file))
+
+        class_name = os.path.basename(os.path.dirname(file))
+
+        # Create class subdirectory in training directory
+        class_dir = os.path.join(train_dir, class_name)
+        os.makedirs(class_dir, exist_ok=True)
+
+        dst_path = os.path.join(class_dir, os.path.basename(file))
         shutil.copy2(file, dst_path)
 
     for file in val_files:
@@ -56,7 +64,7 @@ def split_data(source_dir):
 
     print("Séparation terminée : ~80% in training, ~20% in validation :")
     print(f"{len(train_files)} files in training, {len(val_files)}" +
-          "files in validation.")
+          " files in validation.")
 
 
 if __name__ == "__main__":

@@ -63,12 +63,17 @@ def main(model_path: str, image_path: str, classes: list[str], dorender: bool):
 
     image = None
     prediction = []
+
     if os.path.isfile(image_path):
+
         image = tf.keras.preprocessing.image.load_img(image_path,
                                                       target_size=(256, 256))
+
         image = tf.keras.preprocessing.image.img_to_array(image)
         image = tf.expand_dims(image, axis=0)
+
         prediction.append(model.predict(image))
+
         if dorender:
             render(image_path, classes[prediction[0].argmax()])
 
@@ -87,10 +92,10 @@ def main(model_path: str, image_path: str, classes: list[str], dorender: bool):
         image = tf.concat(image, axis=0)
         prediction.append(model.predict(image))
 
-    print(f"\t{'\t'.join(classes)}")
+    print(f"\t{'    '.join(classes)}")
     for i, predictions in enumerate(prediction):
         for j, predict in enumerate(predictions):
-            print(f"Image {j}: [{'\t'.join(map(str, predict))}]")
+            print(f"Image {j}: [{'  '.join(map(str, predict))}]")
             values = np.array(list(map(float, predict)))
             index = values.argmax()
             print(f"Predicted class: {classes[index]}")
@@ -103,10 +108,12 @@ if __name__ == "__main__":
     parser.add_argument("image", help="Path of image")
     parser.add_argument("model", help="Path of model save")
     parser.add_argument("-c", "--classes", default=clas, help="Classes Types")
-    parser.add_argument("-r", "--dorender", default=True, help="Render image")
+    parser.add_argument("-r", "--dorender", action="store_false",
+                        help="Render image")
 
     args = parser.parse_args()
     try:
+        print(args.dorender)
         main(args.model, args.image, args.classes, args.dorender)
     except Exception as e:
         print(e.__class__.__name__, e)

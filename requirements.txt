@@ -8,6 +8,7 @@ onnxruntime
 
 # For IA model training
 tensorflow[and-cuda]
+# tensorflow-cpu  # for 42 dell
 
 # Dependency for wsl and non interactive os
 PyQt6

@@ -26,7 +26,7 @@ def run_pred(image_path: str, model_path: str, classes: List[str]) -> str:
     """Run predict.py on a single image and return predicted class"""
     try:
         # Capture the output of predict.py
-        cmd = ["python3", "Predict.py", image_path, model_path, "-r False"]
+        cmd = ["python3", "Predict.py", image_path, model_path, "-r"]
         res = subprocess.run(cmd, capture_output=True, text=True, check=True)
 
         # Parse output to find predicted class
