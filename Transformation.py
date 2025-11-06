@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 import os
-
-import matplotlib.pyplot as plt
 import sys
 import argparse
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from pathlib import Path
+
+import matplotlib.pyplot as plt
 import cv2
 import rembg
 from plantcv import plantcv as pcv
@@ -114,38 +116,77 @@ def plot_histogram(image, kept_mask):
     plt.close()
 
 
-def process_directory(src, dst):
+def process_directory(src, dst, max_workers=None):
     """
     Transform all the images in src directory and save them in dst directory
     """
 
-    if not os.path.isdir(src):
+    src_path = Path(src)
+    dst_path = Path(dst)
+
+    if not src_path.is_dir():
         print(f"Error: Source directory '{src}' does not exist.")
         sys.exit(1)
-    if not os.path.isdir(dst):
-        os.makedirs(dst)
+    dst_path.mkdir(parents=True, exist_ok=True)
 
     GREEN = "\033[92m"
     RESET = "\033[0m"
     print(f"{GREEN}Transformation phase, creating {dst} from {src}:\n{RESET}")
 
-    for directory in os.listdir(src):
-        dir_wp = os.path.join(src, directory) # dir_wp = directory with path
-        if not os.path.isdir(dir_wp):
-            print(f"Error: '{dir_wp}' should be a directory.")
-            sys.exit(1)            
-        for file in os.listdir(dir_wp):
-            if file.lower().endswith(('.jpg')):
-                process_file(os.path.join(dir_wp, file), os.path.join(dst, directory))
+    tasks = []
+    for directory in src_path.iterdir():
+        if not directory.is_dir():
+            continue
+        target_dir = dst_path / directory.name
+        target_dir.mkdir(parents=True, exist_ok=True)
+
+        for file_path in directory.glob("*.jpg"):
+            tasks.append((str(file_path), str(target_dir)))
+
+    if not tasks:
+        print(f"No JPG images found in '{src}'.")
+        return
+
+    total = len(tasks)
+    max_workers = max(1, min(total, max_workers or (os.cpu_count() or 1)))
+
+    if max_workers == 1:
+        for idx, (image_path, target_dir) in enumerate(tasks, 1):
+            try:
+                process_file(image_path, target_dir)
+            except Exception as exc:
+                print(f"\nError while processing '{image_path}': {exc}",
+                      file=sys.stderr)
+            finally:
+                print(f"\rProcessed {idx}/{total} images", end="", flush=True)
+    else:
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(process_file, image_path, target_dir): image_path
+                for image_path, target_dir in tasks
+            }
+
+            for idx, future in enumerate(as_completed(futures), 1):
+                try:
+                    future.result()
+                except Exception as exc:
+                    print(f"\nError while processing '{futures[future]}': {exc}",
+                          file=sys.stderr)
+                finally:
+                    print(f"\rProcessed {idx}/{total} images", end="", flush=True)
+
+    print("\nDone.")
 
 
 def process_file(image_path, dst):
-    if not os.path.isfile(image_path):
-        print(f"Error: Image file '{image_path}' does not exist.")
-        sys.exit(1)
+    image_path = Path(image_path)
+    dst_path = Path(dst) if dst is not None else None
+
+    if not image_path.is_file():
+        raise FileNotFoundError(f"Image file '{image_path}' does not exist.")
 
     # Read the image from the given path
-    image, _, _ = pcv.readimage(image_path, mode='rgb')
+    image, _, _ = pcv.readimage(str(image_path), mode='rgb')
 
     image_without_bg = rembg.remove(image)
 
@@ -180,15 +221,14 @@ def process_file(image_path, dst):
         "Pseudolandmarks": cv2.cvtColor(pseudo_landmarks, cv2.COLOR_BGR2RGB),
     }
 
-    if dst is None:
+    if dst_path is None:
         render_plot(image_path, images)
         plot_histogram(image, kept_mask)
 
     else:
         for label, img in images.items():
-            cv2.imwrite(os.path.join(
-                        dst, (label + '_' +
-                              image_path[image_path.rfind('/')+1:])),
+            output_name = f"{label}_{image_path.name}"
+            cv2.imwrite(str(dst_path / output_name),
                         cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
 
 
@@ -212,16 +252,24 @@ def main():
     parser.add_argument("-dst", "--destination",
                         help="Destination directory for transformed images")
 
+    parser.add_argument("-j", "--jobs", type=int, default=0,
+                        help="Number of parallel workers to use (default: cpu count)")
+
     parser.add_argument("image", nargs='?', help="Path to image file")
 
     args = parser.parse_args()
 
-    if args.source and args.destination:
-        process_directory(args.source, args.destination)
-    elif args.image and not args.source and not args.destination:
-        process_file(args.image, None)
-    else:
-        parser.print_help()
+    try:
+        if args.source and args.destination:
+            jobs = args.jobs if args.jobs > 0 else None
+            process_directory(args.source, args.destination, jobs)
+        elif args.image and not args.source and not args.destination:
+            process_file(args.image, None)
+        else:
+            parser.print_help()
+    except FileNotFoundError as exc:
+        print(exc, file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
