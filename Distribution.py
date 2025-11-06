@@ -7,7 +7,6 @@ import seaborn as sns
 
 def get_category(images_dir):
     category = dict()
-    images_dir = sys.argv[1]
     for dir_name in os.listdir(images_dir):
         try:
             if not os.path.isdir(os.path.join(images_dir, dir_name)):
@@ -16,6 +15,10 @@ def get_category(images_dir):
             print(e.__class__.__name__, e)
             exit(0)
         nb_files = len(os.listdir(os.path.join(images_dir, dir_name)))
+        if dir_name.startswith('Apple_'):
+            dir_name = 'A_' + dir_name[6:]
+        elif dir_name.startswith('Grape_'):
+            dir_name = 'G_' + dir_name[6:]
         category[dir_name] = nb_files
     return category
 

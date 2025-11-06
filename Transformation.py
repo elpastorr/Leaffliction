@@ -129,9 +129,14 @@ def process_directory(src, dst):
     RESET = "\033[0m"
     print(f"{GREEN}Transformation phase, creating {dst} from {src}:\n{RESET}")
 
-    for file in os.listdir(src):
-        if file.lower().endswith(('.jpg')):
-            process_file(os.path.join(src, file), dst)
+    for directory in os.listdir(src):
+        dir_wp = os.path.join(src, directory) # dir_wp = directory with path
+        if not os.path.isdir(dir_wp):
+            print(f"Error: '{dir_wp}' should be a directory.")
+            sys.exit(1)            
+        for file in os.listdir(dir_wp):
+            if file.lower().endswith(('.jpg')):
+                process_file(os.path.join(dir_wp, file), os.path.join(dst, directory))
 
 
 def process_file(image_path, dst):
