@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import os
 import sys
+import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
+matplotlib.use("TKAgg")
 
 
 def get_category(images_dir):
