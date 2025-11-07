@@ -12,14 +12,27 @@ def get_new_filename(filename: str, suffix: str) -> str:
     return ".".join(split_filename)
 
 
-def augment_dir(src_dir: str, aug_dir: str):
-    if not os.path.exists(aug_dir):
-        os.makedirs(aug_dir)
+def augment_dir(src: str, dst: str):
+    if not os.path.exists(dst):
+        os.makedirs(dst)
 
-    for file in os.listdir(src_dir):
-        img_path = os.path.join(src_dir, file)
-        if os.path.isfile(img_path):
-            augment(img_path, aug_dir)
+    GREEN = "\033[92m"
+    RESET = "\033[0m"
+    print(f"{GREEN}Augmentation phase, creating {dst} from {src}:\n{RESET}")
+
+    for directory in os.listdir(src):
+        dir_wp = os.path.join(src, directory)  # dir_wp = directory with path
+        if not os.path.isdir(dir_wp):
+            raise FileNotFoundError(f"'{dir_wp}' should be a directory.")
+
+        for file in os.listdir(dir_wp):
+            if file.lower().endswith(('.jpg')):
+                if not os.path.isdir(os.path.join(dst, directory)):
+                    os.makedirs(os.path.join(dst, directory))
+                augment(os.path.join(dir_wp, file),
+                        os.path.join(dst, directory))
+
+    print(f"{GREEN}Augmentation phase completed.{RESET}")
 
 
 def augment(img_path: str, aug_dir: str):
@@ -118,7 +131,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Apply Augmentation to" +
                                      "an image or a directory of images.")
 
-    parser.add_argument("image", help="Path to image file")
+    parser.add_argument("image", help="Path to image file or directory of " +
+                        "directories of images")
 
     parser.add_argument("-dst", "--destination", default="augmented_directory",
                         help="Destination dir for augmented images")
@@ -133,5 +147,5 @@ if __name__ == "__main__":
         elif os.path.isdir(args.image):
             augment_dir(args.image, args.destination)
     except Exception as e:
-        print(e.__class__.__name__, e)
+        print("Error:", e.__class__.__name__, e)
         exit(0)

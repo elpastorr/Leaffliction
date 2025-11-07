@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import os
 import sys
+import seaborn as sns
 import matplotlib
 import matplotlib.pyplot as plt
-import seaborn as sns
 matplotlib.use("TKAgg")
 
 

@@ -4,6 +4,7 @@ import sys
 import argparse
 import random
 
+
 def main(src: Path, dst: Path, nb_files: int = 150) -> None:
     if not src.exists() or not src.is_dir():
         print(f"Source directory not found: {src}", file=sys.stderr)
@@ -35,13 +36,14 @@ def main(src: Path, dst: Path, nb_files: int = 150) -> None:
         print(f"[{i}/{count}] {rel_path} -> {dst_path}")
 
     print(f"Finished copying {copied} randomly selected file(s) to '{dst}'" +
-        " maintaining folder structure.")
+          " maintaining folder structure.")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog="Test Data Preparer",
-        description="Randomly select and copy files from source to destination maintaining folder structure.",
+        description="Randomly select and copy files from source " +
+        "to destination maintaining folder structure.",
         epilog="By Tamigore and Elpastor"
     )
 

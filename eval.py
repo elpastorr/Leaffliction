@@ -36,21 +36,21 @@ def get_or_load_model(model_path: str) -> tf.keras.Model:
     try:
         print(f"Loading model from {model_path}...", flush=True)
         model = tf.keras.models.load_model(model_path)
-    except Exception as exc:
-        raise RuntimeError(f"Unable to load model '{model_path}': {exc}") from exc
+    except Exception as e:
+        raise RuntimeError(f"Unable to load model '{model_path}': {e}") from e
 
     _MODEL_CACHE[model_path] = model
     return model
 
 
-def preprocess_image(image_path: str) -> np.ndarray:
+def preprocess_image(img: str) -> np.ndarray:
     """Load and convert an image to a model-ready numpy array."""
     try:
-        image = tf.keras.utils.load_img(image_path, target_size=(256, 256))
+        image = tf.keras.utils.load_img(img, target_size=(256, 256))
         array = tf.keras.utils.img_to_array(image)
         return array
-    except Exception as exc:
-        raise RuntimeError(f"Unable to preprocess image '{image_path}': {exc}") from exc
+    except Exception as e:
+        raise RuntimeError(f"Unable to preprocess image '{img}': {e}") from e
 
 
 def predict_batch(image_paths: List[str], model: tf.keras.Model) -> np.ndarray:
@@ -63,18 +63,18 @@ def predict_batch(image_paths: List[str], model: tf.keras.Model) -> np.ndarray:
     return predictions
 
 
-def run_pred(image_path: str, model_path: str, classes: List[str]) -> Optional[str]:
+def run_pred(img: str, model_path: str, classes: List[str]) -> Optional[str]:
     """Predict class for a single image using an in-process model cache."""
     try:
         model = get_or_load_model(model_path)
-        prediction = predict_batch([image_path], model)
+        prediction = predict_batch([img], model)
         if prediction.size == 0:
             return None
 
         predicted_index = int(np.argmax(prediction[0]))
         return classes[predicted_index]
     except Exception as exc:
-        print(f"Error processing {image_path}: {exc}", file=sys.stderr)
+        print(f"Error processing {img}: {exc}", file=sys.stderr)
         return None
 
 
@@ -117,16 +117,16 @@ def evaluate_model(test_dir: str, model_path: str, classes: List[str],
             print(f"\n{exc}", file=sys.stderr)
             processed += len(batch)
             continue
-
-        for true_class, prediction in zip(true_classes, predictions):
-            class_total[true_class] = class_total.get(true_class, 0) + 1
+        # t_class = true class
+        for t_class, prediction in zip(true_classes, predictions):
+            class_total[t_class] = class_total.get(t_class, 0) + 1
 
             predicted_index = int(np.argmax(prediction))
             predicted_class = classes[predicted_index]
 
-            if predicted_class == true_class:
+            if predicted_class == t_class:
                 correct += 1
-                class_correct[true_class] = class_correct.get(true_class, 0) + 1
+                class_correct[t_class] = class_correct.get(t_class, 0) + 1
 
         processed += len(batch)
 

@@ -2,6 +2,9 @@ import os
 import shutil
 import random
 import sys
+from Augmentation import augment_dir
+from Transformation import process_directory
+import argparse
 
 
 def split_data(source_dir):
@@ -67,6 +70,54 @@ def split_data(source_dir):
           " files in validation.")
 
 
+def main():
+    """
+    This program is designed to perform split, augmentation and/or
+     transformations on a dataset of images.
+    It accepts a dataset directory containing images
+    and creates a prepared dataset with training and validation sets.
+    Usage:
+        prepare_data.py dir/to/dataset [-a] [-t]
+    Arguments:
+        -a,  Specify to Augment the dataset.
+        -t,  Specify to Transform the dataset.
+    """
+
+    parser = argparse.ArgumentParser(description="Apply split, Augmentation" +
+                                     " and/or Transformation to a dir of img")
+
+    parser.add_argument("dataset", help="Path to the dataset directory")
+
+    parser.add_argument("-a", action="store_true", help="Specify to Augment")
+
+    parser.add_argument("-t", action="store_true",
+                        help="Specify to Transform")
+
+    args = parser.parse_args()
+
+    try:
+        split_data(args.dataset)
+        src_dataset = ["splited_images/training",
+                       "splited_images/validation"]
+        dst_dataset = ["prepared_dataset/training",
+                       "prepared_dataset/validation"]
+        if args.a:
+            if not os.path.exists(dst_dataset[0]):
+                os.makedirs(dst_dataset[0])
+            if not os.path.exists(dst_dataset[1]):
+                os.makedirs(dst_dataset[1])
+            augment_dir(src_dataset[0], dst_dataset[0])
+            augment_dir(src_dataset[1], dst_dataset[1])
+        if args.t:
+            process_directory(src_dataset[0], dst_dataset[0])
+            process_directory(src_dataset[1], dst_dataset[1])
+        print("Created prepared dataset in 'prepared_dataset' directory.")
+        shutil.rmtree("splited_images")
+
+    except FileNotFoundError as e:
+        print("Error:", e, file=sys.stderr)
+        sys.exit(1)
+
+
 if __name__ == "__main__":
-    source_directory = sys.argv[1]
-    split_data(source_directory)
+    main()
