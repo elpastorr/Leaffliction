@@ -38,7 +38,7 @@ def init_datasets(path: str):
     my_logger.info("\n --- Initializing datasets --- \n")
     tds: tf.data.Dataset = tf.keras.preprocessing.image_dataset_from_directory(
         path,
-        validation_split=0.2,
+        validation_split=0.1,
         subset="training",
         seed=123,
         image_size=(256, 256),
@@ -46,7 +46,7 @@ def init_datasets(path: str):
     )
     vds: tf.data.Dataset = tf.keras.preprocessing.image_dataset_from_directory(
         path,
-        validation_split=0.2,
+        validation_split=0.1,
         subset="validation",
         seed=123,
         image_size=(256, 256),
@@ -90,7 +90,7 @@ Args:
 """
 
 
-def train_model(train_ds: tf.data.Dataset, val_ds: tf.data.Dataset):
+def train_model(train_ds: tf.data.Dataset, val_ds: tf.data.Dataset, epochs: int):
     my_logger.info("\n --- Training model --- \n")
     num_classes = len(train_ds.class_names)
     my_logger.info(f"num_classes = {num_classes}")
@@ -111,7 +111,7 @@ def train_model(train_ds: tf.data.Dataset, val_ds: tf.data.Dataset):
                       from_logits=True),
                   metrics=["accuracy"])
     model.summary()
-    epochs = 1
+
     history: tf.keras.callbacks.History = model.fit(
         train_ds,
         validation_data=val_ds,
@@ -153,6 +153,9 @@ if __name__ == "__main__":
 
     parser.add_argument("-s", "--save", default="model.keras",
                         help="Path to save the model")
+    
+    parser.add_argument("-e", "--epochs", type=int, default=10,
+                        help="Number of epochs to train the model")
 
     args = parser.parse_args()
 
@@ -167,6 +170,6 @@ if __name__ == "__main__":
     train_ds, val_ds = init_datasets(args.dataset)
     # get_info(train_ds)
     # get_info(val_ds)
-    model: tf.keras.models.Sequential = train_model(train_ds, val_ds)
+    model: tf.keras.models.Sequential = train_model(train_ds, val_ds, args.epochs)
     model.save(args.save)
     print("END")

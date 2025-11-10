@@ -101,16 +101,19 @@ def main():
                        "splited_images/validation"]
         dst_dataset = ["prepared_dataset/training",
                        "prepared_dataset/validation"]
-        if args.a:
+        if args.a or args.t:
             if not os.path.exists(dst_dataset[0]):
                 os.makedirs(dst_dataset[0])
             if not os.path.exists(dst_dataset[1]):
                 os.makedirs(dst_dataset[1])
-            augment_dir(src_dataset[0], dst_dataset[0])
-            augment_dir(src_dataset[1], dst_dataset[1])
-        if args.t:
-            process_directory(src_dataset[0], dst_dataset[0])
-            process_directory(src_dataset[1], dst_dataset[1])
+        
+            if args.a:
+                augment_dir(src_dataset[0], dst_dataset[0])
+            if args.t:
+                process_directory(src_dataset[0], dst_dataset[0])
+
+            shutil.copy2(src_dataset[1], dst_dataset[1])
+
         print("Created prepared dataset in 'prepared_dataset' directory.")
         shutil.rmtree("splited_images")
 

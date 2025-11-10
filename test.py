@@ -5,7 +5,7 @@ import argparse
 import random
 
 
-def main(src: Path, dst: Path, nb_files: int = 150) -> None:
+def main(src: Path, dst: Path, nb_files: int) -> None:
     if not src.exists() or not src.is_dir():
         print(f"Source directory not found: {src}", file=sys.stderr)
         sys.exit(1)
@@ -67,7 +67,7 @@ if __name__ == "__main__":
         "-n",
         "--nb_files",
         type=int,
-        default=0,
+        default=100,
         help="Number of files to randomly select and copy (default: 150)"
     )
 
