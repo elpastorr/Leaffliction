@@ -213,3 +213,11 @@ No explicit license file is included. If you plan to redistribute or publish, pl
 ---
 
 Happy hacking and leaf spotting!
+
+
+eval with model_big (trained with prepared dataset 78000 img): -prepared dataset 87.69%
+                                                               -splitted img     98.34%
+
+
+eval with model (trained with splitted img):                    -prepared dataset 95.30%
+                                                                -splitted img     83.82% 

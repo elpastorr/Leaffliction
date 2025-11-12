@@ -2,8 +2,9 @@ data/
 images/
 .venv/
 __pycache__/
-*.keras
+model.keras
 *.h5
 splited_images
+prepared_dataset
 test
 tests
