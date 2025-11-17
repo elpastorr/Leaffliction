@@ -1,9 +1,10 @@
 opencv-python
 matplotlib
-plantcv
+plantcv==3.10.0
 seaborn
 rembg
 onnxruntime
+altair==5.0
 
 # For IA model training
 # tensorflow[and-cuda]
