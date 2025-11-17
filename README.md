@@ -4,11 +4,11 @@ A lightweight toolkit to train, analyze, and use an image classifier for leaf di
 
 - A simple TensorFlow/Keras CNN to train on a folder-based dataset
 - A prediction script for single images or batches
-- Image processing and analysis utilities (segmentation, ROI, color histograms, pseudo-landmarks) with PlantCV and rembg
+- Image processing and analysis utilities (segmentation, ROI, color histograms, pseudo-landmarks) using PlantCV and rembg
 - Basic data augmentation utilities
 - Class distribution visualization
 
-Works on Linux and supports CPU or GPU (if properly configured for TensorFlow).
+Works on Linux and supports CPU or GPU (if TensorFlow is configured).
 
 ## Features
 
@@ -19,24 +19,34 @@ Works on Linux and supports CPU or GPU (if properly configured for TensorFlow).
 - Generate augmented samples: flip, rotate, skew, shear, crop, color inversion
 - Plot class distribution of a dataset
 
-## Project structure
+## Quick summary
 
-- `Train.py` — build and train the CNN, saves `model.keras`
-- `Predict.py` — run predictions on images using a saved model
-- `Transformation.py` — segmentation + analysis + plots; works on a single image or a directory
-- `Augmentation.py` — create augmented versions of a single image
-- `Distribution.py` — visualize class counts across subfolders
-- `init.sh` — helper to fetch a sample dataset and create a local venv
-- `requirements.txt` — Python dependencies
-- `images/` — example dataset organized by class (subfolders)
+This README reflects the actual scripts present in the repository and their important functions/flags.
 
-## Requirements
+Key scripts:
+- Train.py — build and train the CNN, saves `model.keras`
+- Predict.py — single-image and batch prediction (`load_model`, `render`)
+- eval.py — batched evaluation utilities (`get_images_with_classes`, `predict_batch`, `run_pred`)
+- prepare_data.py — dataset splitting (`split_data`)
+- Augmentation.py — image augmentations (`augment`, `augment_dir`)
+- Transformation.py — segmentation & analysis (`process_file`, `process_directory`, `render_plot`)
+- Distribution.py — class distribution plotting
+- test.py — small utilities for sampling/copying
+- init.sh — fetch sample dataset and create venv
+- requirements.txt — Python dependencies
+- model_big_e10.keras — example pretrained model included in repo
 
-- Python 3.10+ recommended (tested with modern TensorFlow)
-- Linux (X11 or Wayland) with a GUI for interactive plots; otherwise see headless notes below
-- Optional: NVIDIA GPU with CUDA/cuDNN for TensorFlow GPU
+## Requirements and setup
 
-Install Python deps in a virtual environment:
+Recommended: Python 3.10+ (adjust for your TensorFlow version). Linux desktop recommended for interactive plotting.
+
+Use init helper:
+
+```bash
+bash init.sh
+```
+
+Or install in a virtualenv:
 
 ```bash
 python3 -m venv .venv
@@ -46,41 +56,28 @@ pip install -r requirements.txt
 ```
 
 Notes:
-- The dependency `tensorflow[and-cuda]` attempts to install GPU-enabled TensorFlow when available. If you run into CUDA issues, install plain `tensorflow` instead.
-- `rembg` will download ONNX models on first run. `onnxruntime` is included.
-- `PyQt6` is included to support Matplotlib interactive backends on WSL/headless-like environments.
+- rembg downloads ONNX models on first run; ensure network access.
+- If GPU TensorFlow causes issues, install CPU-only `tensorflow`.
+- For headless environments set `MPLBACKEND=Agg` or install `PyQt6`.
 
 ## Dataset layout
 
-Training expects an image folder with one subfolder per class. Example (provided):
+Training and many tools expect a directory with one subfolder per class:
 
-```
 images/
   Apple_Black_rot/
   Apple_healthy/
-  Apple_rust/
-  Apple_scab/
-  Grape_Black_rot/
-  Grape_Esca/
-  Grape_healthy/
-  Grape_spot/
-```
-
-- Class names are inferred from immediate subfolder names.
-- Images should be readable JPEG/PNG; scripts currently filter for `.JPG` in some places.
-- You can download a sample dataset and create a venv via the helper:
-
-```bash
-bash init.sh
-```
+  ...
+  
+Class names are inferred from subfolder names. Some scripts filter for `.JPG` — ensure images match expected extensions or update scripts.
 
 ## Training
 
 Script: `Train.py`
 
-- Uses `tf.keras.preprocessing.image_dataset_from_directory` with a 80/20 split.
-- Image size: 256x256, batch size 32, 10 epochs by default.
-- Saves the model to `model.keras` in the project root.
+- Uses tf.keras image_dataset_from_directory (default 80/20 split)
+- Default image size: 256×256, batch size: 32, epochs: 10
+- Default output: `model.keras` (adjust constants near bottom of the file)
 
 Run:
 
@@ -89,135 +86,126 @@ source .venv/bin/activate
 python Train.py
 ```
 
-Outputs:
-- Console logs (TensorFlow logs reduced)
-- Trained model saved to `model.keras`
-
-To customize dataset or model output path, edit the constants near the bottom of `Train.py`:
-- `model_file = "model.keras"`
-- `dataset = "images"`
+Helper: `get_info` prints dataset info and sample batches.
 
 ## Prediction
 
 Script: `Predict.py`
 
-Predict on a single image:
+Predict a single image:
 
 ```bash
 python Predict.py path/to/image.jpg model.keras
 ```
 
-Predict on a directory of images:
+Predict a directory:
 
 ```bash
 python Predict.py path/to/folder/ model.keras
 ```
 
 Notes:
-- The default class ordering is: `['Apple_Black_rot', 'Apple_healthy', 'Apple_rust', 'Apple_scab', 'Grape_Black_rot', 'Grape_Esca', 'Grape_healthy', 'Grape_spot']`. This should match the subfolder order used at training time.
-- The script prints raw model scores (logits) and then the predicted class via argmax. Example output shape per image: `[c1 c2 … c8]` then `Predicted class: <name>`.
-- The `-c/--classes` flag exists but is a single-string argument in the current version. Leave it at default unless you edit the script to accept a list properly.
+- Uses `load_model` to read a Keras model and `render` for simple visualization (uses rembg + plantcv).
+- Default class ordering is set in the script — ensure it matches the ordering used during training.
+- The `-c/--classes` CLI flag exists but in the current script expects a single string; modify argparse to accept lists if needed.
 
-## Image transformation and analysis
+## Evaluation
+
+Script: `eval.py`
+
+Run evaluation on a test directory (classes as subfolders):
+
+```bash
+python eval.py path/to/test_dir model.keras
+```
+
+Important helpers: `get_images_with_classes`, `predict_batch`, `get_or_load_model`, `run_pred`, `print_results`. Flags present in the script include `--classes` and `--batch-size`.
+
+## Image transformation & analysis
 
 Script: `Transformation.py`
 
-Single image (interactive visualization):
+Interactive single-image view:
 
 ```bash
 python Transformation.py path/to/image.jpg
 ```
 
-Batch mode (export processed images to a folder):
+Batch processing (writes results to destination):
 
 ```bash
 python Transformation.py -src path/to/images_dir -dst path/to/output_dir
 ```
 
 What it does:
-- Removes background via `rembg`
-- Converts to grayscale L channel (Lab)
-- Thresholds and fills to build a mask
-- Gaussian blur on the mask; applies mask to original image
-- Builds an ROI and filtered mask; computes PlantCV size analysis
-- Creates pseudo-landmarks
-- Produces six views per image: `Original`, `Gaussian Blur`, `Mask`, `ROI`, `Analyzed`, `Pseudolandmarks`
-- Plots a color histogram across multiple color spaces
+- Removes background (rembg)
+- Builds and refines mask (PlantCV + OpenCV)
+- Creates ROI, computes size metrics
+- Generates pseudo-landmarks and color histograms
+- Produces multiple views per image and can write prefixed files (e.g., `ROI_<original>.jpg`)
 
-Outputs:
-- Interactive windows when a single image is provided
-- In batch mode, images are written to `-dst` with filename prefixes like `ROI_<original>.jpg`
-
-First run will download ONNX weights for rembg; keep internet enabled.
+Batch mode writes outputs to destination; single-file mode shows Matplotlib windows.
 
 ## Data augmentation
 
 Script: `Augmentation.py`
 
-Create augmented variants from a single image and save into `augmented_directory/`:
+Create augmented variants of a single image and write to `augmented_directory/`:
 
 ```bash
 python Augmentation.py path/to/image.jpg
 ```
 
-Augmentations included:
-- Vertical flip
-- Rotation (45°, cropped)
-- Skew
-- Shear
-- Center crop + resize
-- Color inversion (HSV-based)
-
-Filenames are suffixed: `_Flip`, `_Rotate`, `_Skew`, `_Shear`, `_Crop`, `_Inverted`.
+Augmentations: flip, rotate, skew, shear, center crop+resize, HSV-based inversion. Filenames are suffixed with `_Flip`, `_Rotate`, `_Skew`, `_Shear`, `_Crop`, `_Inverted`. Use `augment_dir` to process folders.
 
 ## Class distribution visualization
 
 Script: `Distribution.py`
 
-Show pie + bar charts of class counts for a directory that contains class subfolders:
+Show pie and bar charts for a dataset directory:
 
 ```bash
 python Distribution.py images/
 ```
 
-- Expects `images/` to contain one subfolder per class.
-- Opens an interactive Matplotlib window with two subplots.
+`get_category` computes counts and normalizes some class name prefixes.
 
-## Headless and troubleshooting notes
+## Utilities & tests
 
-- No display / Qt backend errors (e.g., on servers):
-  - Ensure `PyQt6` is installed (already in requirements)
-  - Or set a non-interactive backend before running scripts that plot: `export MPLBACKEND=Agg`
-  - Use batch modes that write files instead of showing windows
-- OpenCV libGL errors on Linux: install `libgl1` and `libglib2.0-0` via your package manager
-- TensorFlow GPU issues:
-  - If `tensorflow[and-cuda]` fails, install `tensorflow` CPU-only
-  - Match Python version supported by your TensorFlow release
-- rembg model download/firewall: first call will fetch models; ensure network access
-- Predict classes argument: avoid passing `-c` unless you modify the parser to accept a list (e.g., `nargs='+'`)
+- test.py — sampling and copying utility
+- .gitignore excludes datasets, venv, and model artifacts
+
+## Headless / troubleshooting notes
+
+- Set `export MPLBACKEND=Agg` for non-interactive plotting.
+- Fix OpenCV libGL errors on Linux by installing `libgl1` and `libglib2.0-0`.
+- If rembg fails, check network and onnxruntime installation.
+- If you need a non-list `-c/--classes` behavior changed, edit argparse in Predict.py and eval.py to use `nargs='+'`.
 
 ## Development tips
 
-- Scripts are small and self-contained; tweak constants in `Train.py` to experiment with image size, epochs, or architecture
-- Consider enabling the plotting in `Train.py` by uncommenting `# visualize_result(history, epochs)`
-- For more robust CLI behavior (e.g., custom dataset/model paths), you can restore the commented argparse in `Train.py`
+- Scripts are small and localized; edit constants in Train.py to change model path, dataset, image size, or epochs.
+- Enable or adapt plotting helpers (`render`, `render_plot`, `visualize_result`) as needed.
+- Improve CLI ergonomics by modifying argparse blocks across scripts.
 
-## Acknowledgements
+## Files of interest
 
-- TensorFlow/Keras for model training
-- PlantCV for plant phenotyping utilities
-- rembg + onnxruntime for background removal
+- Train.py
+- Predict.py
+- eval.py
+- prepare_data.py
+- Augmentation.py
+- Transformation.py
+- Distribution.py
+- test.py
+- requirements.txt
+- init.sh
+- model_big_e10.keras
 
-No explicit license file is included. If you plan to redistribute or publish, please add an appropriate license.
+## License
+
+No explicit license file is included. Add a LICENSE if you plan to redistribute.
 
 ---
 
 Happy hacking and leaf spotting!
-
-
-eval with model_big (trained with prepared dataset 78000 img): -prepared dataset 87.69%
-                                                               -splitted img     98.34%
-
-
-eval with model (trained with splitted img):                    -prepared dataset 95.30%
-                                                                -splitted img     83.82% 
