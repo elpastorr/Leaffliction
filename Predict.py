@@ -113,7 +113,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     try:
-        print(args.dorender)
         main(args.model, args.image, args.classes, args.dorender)
     except Exception as e:
         print(e.__class__.__name__, e)
