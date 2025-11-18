@@ -4,7 +4,7 @@ images/
 __pycache__/
 model.keras
 *.h5
+augmented_directory
 splited_images
 prepared_dataset
 test
-tests

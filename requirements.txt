@@ -1,5 +1,5 @@
 matplotlib==3.10.7
-plantcv==3.10.0
+plantcv==4.9
 opencv-python==4.12.0.88
 seaborn==0.13.2
 rembg==2.0.68
