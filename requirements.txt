@@ -1,16 +1,18 @@
-opencv-python
-matplotlib
+matplotlib==3.10.7
 plantcv==3.10.0
-seaborn
-rembg
-onnxruntime
+opencv-python==4.12.0.88
+seaborn==0.13.2
+rembg==2.0.68
+onnxruntime==1.23.2
 altair==5.0
 
 # For IA model training
 # tensorflow[and-cuda]
-tensorflow-cpu  # for 42 dell
+tensorflow-cpu==2.20.0  # for 42 dell
 
 # Dependency for wsl and non interactive os
-PyQt6
+PyQt6==6.10.0
 
-flake8
+
+# Verify if the code is normed
+flake8==7.3.0
