@@ -70,6 +70,45 @@ def split_data(source_dir):
           " files in validation.")
 
 
+def balance_data(dataset):
+    """
+    Équilibrer le nombre d'images par classe dans prepared_dataset.
+    Pour chaque sous-dossier 'training' et 'validation', supprime aléatoirement
+    des images (.jpg) dans les classes qui ont plus d'images afin que toutes
+    les classes aient le même nombre (le minimum).
+    """
+    for subset in ("training", "validation"):
+        subset_dir = os.path.join(dataset, subset)
+        if not os.path.isdir(subset_dir):
+            continue
+
+        # récupérer les dossiers de classes
+        class_dirs = [os.path.join(subset_dir, d) for d in os.listdir(subset_dir)
+                      if os.path.isdir(os.path.join(subset_dir, d))]
+        if not class_dirs:
+            continue
+
+        files_per_class = {}
+        for d in class_dirs:
+            files = [f for f in os.listdir(d) if f.lower().endswith(".jpg")]
+            files_per_class[d] = files
+
+        min_count = min(len(files) for files in files_per_class.values())
+
+        for d, files in files_per_class.items():
+            excess = len(files) - min_count
+            if excess > 0:
+                to_remove = random.sample(files, excess)
+                for fname in to_remove:
+                    path = os.path.join(d, fname)
+                    try:
+                        os.remove(path)
+                    except OSError:
+                        # Ignorer les erreurs de suppression et continuer
+                        pass
+        print(f"Balanced '{subset}': chaque classe a maintenant {min_count} images.")
+
+
 def main():
     """
     This program is designed to perform split, augmentation and/or
@@ -92,28 +131,35 @@ def main():
 
     parser.add_argument("-t", action="store_true",
                         help="Specify to Transform")
+    parser.add_argument("-b", action="store_true",
+                        help="Specify to Balance the dataset instead of" +
+                        " spliting or augmenting or transforming")
 
     args = parser.parse_args()
-
     try:
-        split_data(args.dataset)
-        src_dataset = ["splited_images/training",
-                       "splited_images/validation"]
-        dst_dataset = ["prepared_dataset/training",
-                       "prepared_dataset/validation"]
-        if args.a or args.t:
-            if not os.path.exists(dst_dataset[0]):
-                os.makedirs(dst_dataset[0])
-        
-            if args.a:
-                augment_dir(src_dataset[0], dst_dataset[0])
-            if args.t:
-                process_directory(src_dataset[0], dst_dataset[0])
+        if args.b:
+            balance_data(args.dataset)
+            print("Balanced dataset in 'prepared_dataset' directory.")
 
-            shutil.copytree(src_dataset[1], dst_dataset[1])
-            shutil.rmtree("splited_images")
+        else:
+            split_data(args.dataset)
+            src_dataset = ["splited_images/training",
+                           "splited_images/validation"]
+            dst_dataset = ["prepared_dataset/training",
+                           "prepared_dataset/validation"]
+            if args.a or args.t:
+                if not os.path.exists(dst_dataset[0]):
+                    os.makedirs(dst_dataset[0])
 
-        print("Created prepared dataset in 'prepared_dataset' directory.")
+                if args.a:
+                    augment_dir(src_dataset[0], dst_dataset[0])
+                if args.t:
+                    process_directory(src_dataset[0], dst_dataset[0])
+
+
+                shutil.copytree(src_dataset[1], dst_dataset[1])
+                shutil.rmtree("splited_images")
+                print("Created prepared dataset in 'prepared_dataset' dir.")
 
     except FileNotFoundError as e:
         print("Error:", e, file=sys.stderr)
