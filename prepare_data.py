@@ -78,13 +78,13 @@ def balance_data(dataset):
     les classes aient le même nombre (le minimum).
     """
     for subset in ("training", "validation"):
-        subset_dir = os.path.join(dataset, subset)
-        if not os.path.isdir(subset_dir):
+        sub_dir = os.path.join(dataset, subset)
+        if not os.path.isdir(sub_dir):
             continue
 
         # récupérer les dossiers de classes
-        class_dirs = [os.path.join(subset_dir, d) for d in os.listdir(subset_dir)
-                      if os.path.isdir(os.path.join(subset_dir, d))]
+        class_dirs = [os.path.join(sub_dir, d) for d in os.listdir(sub_dir)
+                      if os.path.isdir(os.path.join(sub_dir, d))]
         if not class_dirs:
             continue
 
@@ -106,7 +106,7 @@ def balance_data(dataset):
                     except OSError:
                         # Ignorer les erreurs de suppression et continuer
                         pass
-        print(f"Balanced '{subset}': chaque classe a maintenant {min_count} images.")
+        print(f"Balanced '{subset}': every class now has {min_count} images.")
 
 
 def main():
@@ -155,7 +155,6 @@ def main():
                     augment_dir(src_dataset[0], dst_dataset[0])
                 if args.t:
                     process_directory(src_dataset[0], dst_dataset[0])
-
 
                 shutil.copytree(src_dataset[1], dst_dataset[1])
                 shutil.rmtree("splited_images")
